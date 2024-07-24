@@ -1,6 +1,7 @@
-\documentclass{article}
+\documentclass[12pt,twoside,a4paper]{report}
 
 \usepackage[masterthesis]{systems-cover}
+\graphicspath{ {images/} }
 
 \covernum{510}
 \covertitle{A Very Cool Master Thesis}
@@ -11,4 +12,26 @@
 % \coverlogo{\includegraphics[height=10mm]{foo-logo}}
 
 \begin{document}
+\pagenumbering{roman}
+\input{chapters/acknowledgements}
+\cleardoublepage
+\input{chapters/abstract}
+\cleardoublepage
+
+\tableofcontents
+\cleardoublepage
+\pagenumbering{arabic}
+\input{chapters/introduction}
+\cleardoublepage
+\input{chapters/background}
+\cleardoublepage
+\input{chapters/latome-firmware}
+\cleardoublepage
+\input{chapters/time-vs-space}
+\cleardoublepage
+\input{chapters/evaluation}
+\cleardoublepage
+\input{chapters/conclusion}
+\cleardoublepage
+
 \end{document}
