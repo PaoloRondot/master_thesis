@@ -49,10 +49,3 @@ When developing the new firmware from the specifications in HLS, very interestin
 
 The figure \ref{fig:current-HLS-design} shows that all the remapping and processing blocks except for the User Code are being processed using parallel data. This is possible thanks to the serial-to-parallel and parallel-to-serial data transformation blocks. This approach drastically simplifies the design and showed very promising results in terms of area reduction, reduced latency.
 % TODO: add more promising results
-
-\section{Space vs Time Division Multiplexing}\label{sec:space-versus-time-division-multiplexing}
-Space division multiplexing consists in making all the data available at the same time by using parallel inputs. This approach is more natural and makes the design simpler to describe as time dependencies are removed. For example when using serial data, i.e. time division multiplexing, if the word from time \(t=0\) of the frame needs to be available at the same time as the one of \(t=4\), the logic becomes very complex. This is not the case when using parallel data, since the whole frame is the input.
-
-Additionally, in most cases, space division multiplexing yields a lower latency. Taking the example of the LATOME firmware, in the VHDL implementation which uses serial data, the remapping stages take more than 30 clock cycles to process the data. By using parallel data, a simple Input Switch Matrix could be implemented and processes the data in only 1 clock cycle.
-
-In terms of area, space and time division multiplexing can yield very different results; depending on the situation, one might be more advantageous than the other. When the design is devoid of dependencies between the words, the resource sharing unlocked by time division multiplexing can be very advantageous at the price of a higher latency. On the other hand, since buses are wider with parallel data, routing can become convoluted with, for example, very large multiplexers.
