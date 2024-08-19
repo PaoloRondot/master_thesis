@@ -1,4 +1,4 @@
-\chapter{Leveraging Time vs Space Division Multiplexing}\label{sec:leveraging-time-division-multiplexing}
+\chapter{Leveraging Time vs Space Division Multiplexing}\label{ch:leveraging-time-division-multiplexing}
 
 When a chunk of data is available at a given time for processing, it can all be processed at the same time, or pieces after pieces.
 Processing simultaneously all the data offers the advantage of a reduced latency, but requires creating copies of the processing 
@@ -61,11 +61,6 @@ The Output Summing represented in figure \ref{fig:osum-v6} is made of the follow
     \item CRC9: This final block appends to the last 9 bits of each frame a CRC9 value which it computes
 \end{itemize}
 
-When investigating the OSM block more in details, it appears that, in the worst case, there should be 48 multiplexers of input size \(224\times17=3808\).
-By looking at the data path and optimizing for it, the biggest multiplexers have at most 4 input frames.
-Figure \ref{fig:osum-v6} shows the parallel to serial block creating 32 bits words for the FEX systems. Moving this block to the left would have no impact
-on the latency. However, by moving this block before the Output Switch Matrix, the biggest multiplexers would have an input size of \(4\times32\) instead of \(4\times224\).
-
-An important aspect to monitor is the data dependencies, since these could have a critical impact if using TDM. The OSM block is a routing block which does not change any data in the frames. The Frame Alignment only overwrites the data that it gets as input if the current BC index is an alignment one, hence it does not show data dependencies. Finally the Cyclic Redundant Check can be both computed in a parallel or serial fashion equivalently without any effect on performances.
-This first example shows a practical case where TDM could have a beneficial effect on the firmware design in terms of optimization, without having to trade off any other metric.
-
+The OSM, which is further described in Section \ref{sec:osm}, takes large inputs of 224 bits. When working with such data widths, different point of optimization arise. The data synchronization becomes much more complex as 224 signals simultaneous signals must be processed. Consequently, such implementations can block the \(F_{max}\) to low values. 
+Then, the OSM uses multiplexers to route the data to the FEX systems. It does so by using multiplexers which can become very big if they use multiple inputs of 224 bits. 
+This case shows an example where TDM could be used to reduce the data width by using a serial approach where smaller pieces of the data are processed sequentially.
