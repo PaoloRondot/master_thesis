@@ -61,6 +61,7 @@ The Output Summing represented in figure \ref{fig:osum-v6} is made of the follow
     \item CRC9: This final block appends to the last 9 bits of each frame a CRC9 value which it computes
 \end{itemize}
 
-The OSM, which is further described in Section \ref{sec:osm}, takes large inputs of 224 bits. When working with such data widths, different point of optimization arise. The data synchronization becomes much more complex as 224 signals simultaneous signals must be processed. Consequently, such implementations can block the \(F_{max}\) to low values. 
-Then, the OSM uses multiplexers to route the data to the FEX systems. It does so by using multiplexers which can become very big if they use multiple inputs of 224 bits. 
-This case shows an example where TDM could be used to reduce the data width by using a serial approach where smaller pieces of the data are processed sequentially.
+The OSM, which is further described in Section \ref{sec:osm}, takes large inputs of 224 bits. When working with such data widths, different points of optimization arise. The data synchronization becomes much more complex as 224 signals simultaneous signals must be processed. Consequently, such implementations can block the \(F_{max}\) to low values. 
+Then, the OSM uses multiplexers to route the data to the FEX systems. These can become very big with multiple inputs each of 224 bits hence yielding high area usages.
+
+The OSM is a good candidate to use TDM and process smaller pieces of data sequentially.
