@@ -9,28 +9,44 @@ A simple parallel with human body is our hands. When writing a text, because of 
 texts one letter after another. But if we imagined having 1000 hands, and enough space to hold as many pen without interfering with one another,
 we could imagine writing whole paragraphs at once.
 
-\begin{figure}
-    \centering
-    \includegraphics[width=1\textwidth]{time_vs_space_mux.png}
-    \caption{Simple Representation of Time and Space Division Multiplexing}
-    \label{fig:time-vs-space}
-\end{figure}
 
 \section{Time Division Multiplexing}\label{sec:time-division-multiplexing}
-The time division multiplexing approach consists in sharing the resources, or processing blocks, by routing each piece of data 
-depending on time \(t\). In the figure \ref{fig:time-vs-space} this refers to the lower block diagram. Choosing this implementation 
-can be intuitive as computers usually process data using frames of 32 to 64 bits. It has the advantage of reusing design blocks hence
-possibly reducing area usage, but performs poorly in case of data dependencies. If the word from time \(t=0\) of the frame needs to be 
-available at the same time as the one of \(t=4\), the logic becomes very complex thus canceling the positive area impact unlocked by 
-resource sharing.
+The time division multiplexing approach consists in sharing the resources, or processing blocks, by routing each piece of data depending on time \(t\). Choosing this implementation can be intuitive as computers usually process data using frames of 32 to 64 bits. It has the advantage of reusing design blocks hence possibly reducing area usage, but performs poorly in case of data dependencies. If the word from time \(t=0\) of the frame needs to be available at the same time as the one of \(t=4\), the logic becomes very complex thus canceling the positive area impact unlocked by resource sharing.
 
-This sequential processing approach requires counters used by multiplexers to latch the input data at the right moments.
+This sequential processing approach requires counters used by multiplexers to latch the input data at the right moments. This approach is represented in figure \ref{fig:time-division-multiplexing}.
+
+\begin{figure}
+    \begin{subfigure}[c]{.5\textwidth}
+        \centering
+        \includegraphics[width=1\linewidth]{tdm.png}
+        \caption{Block Diagram}
+    \end{subfigure}
+    \begin{subfigure}[c]{.5\textwidth}
+        \centering
+        \includegraphics[width=1\linewidth]{../timings/tdm.pdf}
+        \caption{Timing}
+    \end{subfigure}
+    \caption{Space Division Multiplexing}
+    \label{fig:time-division-multiplexing}
+\end{figure}
 
 \section{Space Division Multiplexing}
-Another way of treating the data is to make it all available at the same time, as parallel inputs of the processing block. This approach
-is more natural as it is closer to what humans experience; we see, hear, feel, taste at the same time, not one after the other. In figure \ref{fig:time-vs-space}
-it is represented on top. Space Division Multiplexing generally offers small latencies, as every block runs in parallel and reduces the use of 
-sequential logic which would be required in TDM. In fact, using a parallel logic, some processing blocks can become purely combinational ones.
+Another way of treating the data is to make it all available at the same time, as parallel inputs of the processing block. This approach is more natural as it is closer to what humans experience; we see, hear, feel, taste at the same time, not one after the other. It is represented in figure \ref{fig:space-division-multiplexing}. Space Division Multiplexing generally offers small latencies, as every block runs in parallel and reduces the use of sequential logic which would be required in TDM. In fact, using a parallel logic, some processing blocks can become purely combinational ones.
+
+\begin{figure}
+    \begin{subfigure}{.5\textwidth}
+        \centering
+        \includegraphics[width=1\linewidth]{sdm.png}
+        \caption{Block Diagram}
+    \end{subfigure}
+    \begin{subfigure}{.5\textwidth}
+        \centering
+        \includegraphics[width=1\linewidth]{../timings/sdm.pdf}
+        \caption{Timing}
+    \end{subfigure}
+    \caption{Space Division Multiplexing}
+    \label{fig:space-division-multiplexing}
+\end{figure}
 
 \section{Tradeoffs}\label{sec:space-versus-time-division-multiplexing}
 Whether one approach is better than the other is impossible to determine prior to having a deep understanding of the data processing blocks.
