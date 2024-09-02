@@ -1,3 +1,15 @@
-\chapter{Evaluation}
-\label{sec:evaluation}
-\parskip4pt \parindent12pt
+\chapter{Evaluation}\label{sec:evaluation}
+
+\section{Software Simulation}
+
+In the LATOME HLS team, the software simulation stack is made of 4 layers:
+\begin{itemize}
+    \item The layer 0 (l0) tests are written in C++, without timing information, and use both a C++ only and RTL simulation. They are close to unit tests and are used to validate the blocks individually.
+    \item The layer 1 (l1) is written in Python using the cocotb library. It is used to test the integration of the blocks with timing information and monitoring. The Layer 1 tests both the ISM and OSUM blocks, without the clock domain transfers and actual User Code.
+    \item The layer 2 (l2) implements the l1 but takes into account the clock domain transfers and serial-to-parallel and parallel-to-serial conversions VHDL blocks.
+    \item The layer 3 (l3) is the final layer and tests the whole system with the User Code, and the different Software configuration programs.
+\end{itemize}
+
+Each layer can catch different types of bugs, and the higher the layer, the more time it takes to run and the more complex it becomes. The new firmware developed for this thesis has passed successfully each of these layers.
+
+\section{Hardware testing}

@@ -299,7 +299,37 @@ In fact, unrolling outside can be useful when some sequential logic can be share
 
 \subsubsection{CRC9}
 
+In the v6 firmware, similarly to the Frame Alignment, the CRC9 block is unrolled outside of the CCORE. The block alone represents 68 ALMs for an \(F_{max}\) of 395.6 MHz. When unrolling inside of the CCORE, the whole block gives an area of 3332 ALMs and an operating frequency of 357.1 MHz. Unrolling inside of the CCORE makes the block 49 times bigger, which matches the number of frames to process, and has a negative impact on the \(F_{max}\) which must be double checked in the OSUM block.
 
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{|c|c|c|}
+        \hline
+        \hline
+        \multicolumn{3}{|c|}{unroll outside} \\
+        \hline
+        Block & Area (ALMs) & \(F_{max}\) (MHz) \\
+        \hline
+        CRC9 & \underline{68} (\(68\times48=3264\)) & 395.5 \\
+        OSUM & 30534 & 271.89 \\
+        \hline
+        \hline
+        \multicolumn{3}{|c|}{unroll inside} \\
+        \hline
+        Block & Area (ALMs) & \(F_{max}\) (MHz) \\
+        \hline
+        CRC9 & \underline{3332} (\(3332/48=69.4\))& 357.1\\
+        OSUM & 30507 & 262.6\\
+        \hline
+    \end{tabular}
+    \caption{CRC9 design exploration using the v6 firmware}
+    \label{tab:crc9-optimization}
+\end{table}
+
+Table \ref{tab:crc9-optimization} shows the impact of both approaches on the OSUM block. While the area difference is negligeable, the \(F_{max}\) is reduced by 10 MHz when unrolling inside of the CCORE. 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Overall Improvement}
+
