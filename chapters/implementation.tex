@@ -42,7 +42,7 @@ The OSM uses multiplexers to route the 17 inputs to the 48 outputs and takes its
     \centering
     \includegraphics[width=0.6\textwidth]{osm.png}
     \caption{Output Switch Matrix Simplified Diagram}
-    \label{fig:original-vhdl-design}
+    \label{fig:osm-design}
 \end{figure}
 
 Without looking at the different LATOME routings, it appears that, there should be 48 multiplexers of input size \(224\times17=3808\) bits. However when considering the data paths and optimizing for them, the biggest multiplexers turn out to have at most 4 input frames, meaning that each row from the HLS 2D array has only 4 entries. In other words, the Output Switch Matrix is a sparse matrix. By moving the serializer before the OSM, the biggest multiplexers have an input size of \(4\times32\) instead of \(4\times224\).
@@ -226,7 +226,7 @@ Another interesting aspect rising from this DSE is the discrepancy between the r
 The colorization of the area values ranges from green when it is the lowest to red when it is the highest. The Quartus area values gradient follows the one from Catapult in average but for some groups of solutions Catapult seems to be too optimistic and for others too pessimistic. In the Catapult result, one can also see the slack column which indicates, in nanosecond, the time left for the design to meet the timing constraints. In most cases, Catapult is too optimistic, as the slack is positive but the \(F_{max}\) is under 280 MHz. 
 
 
-\includepdf[pages={1-},scale=0.25,width=1.3\textwidth,pagecommand={\null\vfill\captionof{table}{Compilation of the Design Space Exploration results}}\label{tab:dse-table}]{../pdf/results.pdf}
+\includepdf[pages={1-},scale=0.25,width=1.3\textwidth,pagecommand={\null\vfill\captionof{table}{Compilation of the Design Space Exploration results}}]{../pdf/results.pdf}
 
 
 
