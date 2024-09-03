@@ -10,6 +10,29 @@ In the LATOME HLS team, the software simulation stack is made of 4 layers:
     \item The layer 3 (l3) is the final layer and tests the whole system with the User Code, and the different Software configuration programs.
 \end{itemize}
 
-Each layer can catch different types of bugs, and the higher the layer, the more time it takes to run and the more complex it becomes. The new firmware developed for this thesis has passed successfully each of these layers.
+Each layer can catch different types of bug, and the higher the layer, the more time it takes to run and the more complex it becomes. The new firmware developed for this thesis has passed successfully each of these layers.
+
+\subsection{Layer 0}
+
+The layer 0 are divided in two types of tests: the C++ only tests and the RTL tests. The C++ only tests are used to validate the C++ logic used in the HLS blocks. For instance, it can test that an adder function is actually adding two numbers and giving the correct result.
+
+With the same code, also called ``test bench'' the generated RTL files can be tested using Questa simulation. This is very helpful as the test bench code can directly use the C++ HLS types, such as \verb|ac_int| or \verb|ac_channel|. However, the layer 0 has no access to the different clocks and individual signals of the design. 
+
+For the different blocks, the test bench generates random inputs which are processed with C++ code and compared with the output of the HLS design.
+
+\subsection{Firmware Aware and Agnostic Models}
+
+The layers 1, 2 and 3 use a LATOME software model to compare against the RTL outputs. Two models are used to reduce the risk of bugs: the firmware aware model and the firmware agnostic model. The former replicates each blocks of the firmware in Python and gives access to the results at each steps, while the latter is only based on the specifications of the firmware and only gives access to the final outputs.
+
+\subsection{Layer 1}
+
+To only test the HLS code, corresponding to the ISM and the OSUM, the layer 1 uses Python and the cocotb library, together with Questa simulation. The User Code which connects the ISM and OSUM is a simple bypass at this level. With cocotb, the test bench can access the different signals of the design, and monitor them. Layers 1, 2 and 3 are used to validate the integration of the blocks, and the timing information.
+
+\subsection{Layer 2}
+
+
+
+\subsection{Layer 3}
+
 
 \section{Hardware testing}

@@ -43,11 +43,6 @@ Processing simultaneously all the data offers the advantage of a reduced latency
 blocks for each piece. A sequential processing gives the possibility of having just one processing block treating the data step 
 by step at a price of latency.
 
-A simple parallel with human body is our hands. When writing a text, because of our small number of hands we are condemned to write 
-texts one letter after another. But if we imagined having 1000 hands, and enough space to hold as many pen without interfering with one another,
-we could imagine writing whole paragraphs at once.
-
-
 \subsection{Time Division Multiplexing}\label{sec:time-division-multiplexing}
 The time division multiplexing approach consists in sharing the resources, or processing blocks, by routing each piece of data depending on time \(t\). Choosing this implementation can be intuitive as computers usually process data using frames of 32 to 64 bits. It has the advantage of reusing design blocks hence possibly reducing area usage, but performs poorly in case of data dependencies. If the word from time \(t=0\) of the frame needs to be available at the same time as the one of \(t=4\), the logic becomes very complex thus canceling the positive area impact unlocked by resource sharing.
 
