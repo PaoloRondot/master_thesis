@@ -5,10 +5,10 @@
 \begin{tikzpicture}[]
 
 % Background rectangle with borders (larger)
-\draw[fill=gray!20] (-2.2,-5) rectangle (21.7,3);
+\draw[fill=gray!20] (5,-5) rectangle (16,3);
 
 % "DUT" at the top left of the background rectangle
-\node[anchor=north west, font=\large] at (-2.2,3) {DUT};
+\node[anchor=north west, font=\large] at (5,3) {DUT};
 
 \draw[fill=lightgray] (6,0) rectangle (8,2);
 \node[align=center] at (7,1) {Input Stage};
@@ -36,9 +36,8 @@
 \draw[] (9.5,-4) rectangle (11.5,-2);
 \node[align=center] at (10.5,-3) {IP Ctrl};
 
-\draw[->] (10.5,-2) -- (10.5,-1) -- (7,-1) -- (7,0)
-\draw[->] (10.5,-2) -- (10.5,0)
-\draw[->] (10.5,-2) -- (13.5,-1) -- (7,-1) -- (7,0)
+\draw[->] (10.5,-2) -- (10.5,-1) -- (7,-1) -- (7,0);
+\draw[->] (10.5,-2) -- (10.5,0);
 
 % Arrow coming out of the 4th block
 \draw[<->] (11.5,-3) -- (12.5,-3);
