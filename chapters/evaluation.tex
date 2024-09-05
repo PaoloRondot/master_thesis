@@ -33,7 +33,7 @@ The layers 1, 2 and 3 use a LATOME software model to compare against the RTL out
 
 To only test the HLS code, corresponding to the ISM and the OSUM, the layer 1 uses Python and the Cocotb library, together with Questa simulation. The User Code which connects the ISM and OSUM is a simple bypass at this level. With Cocotb, the test bench can access the different signals of the design, and monitor them. 
 
-This layer uses a simple VHDL wrapper specifically written for it to embed the ISM and OSUM blocks. 
+This layer uses a simple VHDL wrapper specifically written for it to embed the ISM and OSUM blocks and runs on a single 240 MHz clock domain.
 
 \subsection{Layer 2}
 
