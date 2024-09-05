@@ -6,6 +6,13 @@
 The LAr Calorimeter is made of 180,000 cells measuring energies which are summed up to form 34,048 artificial supercells. This summing is necessary to reduce the amount of data being processed at the cost of a lower granularity. The 12-bit readings of 8 supercells are serialized into one packet and sent through one optic fiber. The 116 LATOME boards are each connected to 48 optic fibers, thus receiving data from a maximum of \(48\times8=384\) supercells. These boards are responsible for transforming the ADC levels into energy levels, reorganizing the data and summing some energies for LATOMEs covering specific regions of the detector and distributing the data to the Feature Extraction (FEX) system. The FEX system is responsible for processing the data and sending it to the Level 1 Trigger system.
 % TODO: Precise what kind of cells
 
+\begin{figure}
+    \centering
+    \includegraphics[width=1\textwidth]{LArCal.png}
+    \caption{LAr Calorimeter Simplified Data Path}
+    \label{fig:lar-data-path}
+\end{figure}
+
 The FEX system is made of 3 groups: the Global Feature Extractor (gFEX), the Jet Feature Extractor (jFEX) and the Electron Feature Extractor (eFEX). Within these groups, gFEX only contains one board which gets summed data from all LATOMEs, thus showing the lowest granularity but with one board covering the whole detector. Then the jFEX is made of 6 boards, each receiving data from 19 LATOMEs, and finally the eFEX, with the highest granularity, is made of 24 boards, each receiving data from 4 LATOMEs.
 
 \subsection{The LATOME Specifications}\label{sec:latome-specifications}
