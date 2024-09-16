@@ -16,6 +16,13 @@ The LAr Calorimeter is made of approximately 180,000 cells measuring energies wh
 
 The FEX system processes the data and sends it to the Level 1 Trigger system. It contains 3 groups: the Global Feature Extractor (gFEX), the Jet Feature Extractor (jFEX) and the Electron Feature Extractor (eFEX). Within these groups, gFEX uses one board which gets summed data from all LATOMEs, thus showing the lowest granularity but with one board covering the whole detector. Then the jFEX uses 6 boards, each receiving data from up to 19 LATOMEs, and finally the eFEX, with the highest granularity, uses 24 boards, each receiving data from up to 4 LATOMEs.
 
+\begin{figure}
+    \centering
+    \includegraphics[width=1\textwidth]{LArCal.png}
+    \caption{LAr Calorimeter Simplified Data Path}
+    \label{fig:lar-data-path}
+\end{figure}
+
 \subsection{The LATOME Specifications}\label{sec:latome-specifications}
 The part of the LATOME firmware which converts ADC levels into energy levels is called \textit{User Code} in the LAr group. The LATOME HLS team does not own this code. However, the team develops the blocks for the different data organization steps, also called mapping or remapping, and the summing of energies for LATOMEs in specific regions of the detector. Additionally, since the output energies are only encoded on 10 bits for the eFEX and 12 bits for the jFEX and gFEX, it is necessary to compress the data from 12 to 10 bits for the former or 22 to 12 bits for the latter via a Multi Linear Encoder (MLE).
 
