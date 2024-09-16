@@ -10,6 +10,5 @@
 \section{High Level Synthesis}\label{sec:high-level-synthesis}
 
 \subsection{Catapult CCOREs}
-When designing blocks, Catapult offers the possibility to set them as CCORE. This directives should be used for elementary blocks used many times throughout the design. CCOREs are synthesized and optimized as a single block once and then reused where needed. This can save synthesis run time and area on the FPGA.
 
-Two types of CCORE are offered by Catapult: sequential or combinational. The former should be used when registers are required for sequential steps, like counters, while the latter should be used for combinational logic, such as routing. Throughout the thesis, the CCOREs played an important role, and setting them correctly was crucial for the optimization process.
+When designing elementary blocks that are used many times throughout the design, it can be beneficial to optimize these once as a single block and then reuse them where needed as a ``black box''. This is the idea behind Catapult's CCOREs. Two types of CCORE are offered by Catapult: sequential or combinational. The former should be used when registers are required for sequential steps, like counters, while the latter should be used for combinational logic, such as routing. Hence CCOREs are synthesized and optimized as a single block once. This can save synthesis run time and area on the FPGA. Throughout the thesis, the CCOREs played an important role, and setting them correctly was crucial for the optimization process.

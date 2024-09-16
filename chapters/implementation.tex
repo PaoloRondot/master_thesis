@@ -2,7 +2,13 @@
 
 \section{Different Spaces of Design Exploration}
 
-The optimization of the LATOME firmware can be done by leveraging different division multiplexing approaches, HLS directives or design implementations. These are three different spaces of design exploration that were explored to improve the firmware. This chapter will present the different explorations that were conducted in the context of this thesis in a first section. Next, the second section will focus on the results obtained after testing these different options.
+In a firmware design process, different parameters, taking different values can have a significant impact on the final design. The goal of a Design Space Exploration (DSE) is to find the best combination of these parameters to optimize the design. In the context of this thesis, the different spaces of design exploration are the following:
+\begin{itemize}
+    \item Time Division Multiplexing: The v5 firmware uses a Time Division Multiplexing (TDM) approach to process the data. The v6 firmware uses a Space Division Multiplexing (SDM) approach. The design space defined here is to explore the impact of moving up the serializer in the v6 firmware to find the best compromise between TDM and SDM.
+    \item Unrolling Inside or Outside the CCORE: When designing the HLS code for the different blocks, two options can be considered using CCOREs in \verb|for| loops.
+    \item Leveraging HLS Directives: The Catapult synthesis tool offers many directives to optimize the design. The CCORE related directives can be set to either sequential or combinational, and the optimization goal can be set to either latency or area. The different blocks of the firmware can be optimized using these directives.
+
+This chapter will present the different explorations in the context of this thesis in a first section. Next, the second section will focus on the results obtained after testing these different options.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -10,16 +16,15 @@ The optimization of the LATOME firmware can be done by leveraging different divi
 
 \section{Methodology}
 
-This section presents the methodology followed to perform the Design Space Explorations. The only design changes involving new code are those concerning the TDM exploration. The HLS directives and the unrolling inside or outside the CCORE are only changes in the HLS synthesis options.
+The only design changes involving new HLS code and a change in the architecture are those concerning the TDM exploration. The HLS directives and unrolling inside or outside the CCORE are only changes in the HLS synthesis options. In other words, the TDM introduced changes in the code giving birth to a new firmware version, v6.b, while the two other spaces of design exploration only changed the way the code was synthesized.
 
-To perform a fair comparison of both the v6 firmware and the new one, characterized by the changes introduced by TDM, a DSE was also conducted for the v6 firmware, to  make sure two optimized firmware versions are compared.
+The order of the design space explorations shows first the most impactful changes, the TDM exploration, then the HLS directives and finally the unrolling inside or outside the CCORE. The TDM exploration was done first to get a new firmware version to use as a base for the two other explorations. Next the choice between unrolling inside or outside the CCORE was made to get the best results for the HLS directives exploration.
 
 \subsection{Time Division Multiplexing}
 
 The v5 of the LATOME firmware only uses the TDM approach. The data frames are broken down in different words which are processed sequentially. On the other hand, the v6 firmware leverages almost only the SDM approach with parallel interfaces for the ISM and OSUM blocks, using deserializer and serializer.
 
-As the base code for this thesis is the v6 HLS firmware, the TDM design space can be explored by moving up or down the serializer currently placed at the output of the OSUM. The figure \ref{fig:slider-serializer} shows the different possible positions for the serializer. 
-% Since the v6 Output Summing logic is almost only a combinational one, and processes parallel data, its clock can use any frequency above the \(40\)MHz one of the Bunch Crossings.
+As the base code for this thesis is the v6 HLS firmware, the TDM design space is explored by moving up or down the serializer currently placed at the output of the OSUM. The figure \ref{fig:slider-serializer} shows the different possible positions for the serializer.
 
 \begin{figure}
     \centering
@@ -30,7 +35,7 @@ As the base code for this thesis is the v6 HLS firmware, the TDM design space ca
 
 The serializer at the output of the OSUM breaks down frames of 224 bits into 7 words of 32 bits. The main intuition behind this design exploration is that using smaller data words could reduce the size of some design blocks. Meanwhile, the latency of the design remains unchanged, as the serializer is only moving up in the design.
 
-During this thesis, the serializer was moved up to two main different positions. The first one was before the Output Switch Matrix, and the second one was before the Data Encoder. In both cases, the OSM, Frame Alignment and CRC9 blocks were modified to handle the new data format. 
+This part presents two different positions for the OSM. The first one is before the Output Switch Matrix, and the second one is before the Data Encoder. In both cases, the OSM, Frame Alignment and CRC9 blocks were modified to handle the new data format.
 
 An important aspect to check is the data dependencies, since these could have a critical impact when using TDM. The OSM block is a routing block which does not change any data in the frames. The Frame Alignment only overwrites the data that it gets as input if the current BC index is an alignment one, hence it does not show data dependencies. Finally the Cyclic Redundant Check can be both computed in a parallel or serial fashion equivalently and only depends on the CRC temporary result from time \(t=-1\). Having no data dependencies, the TDM approach can be used without any issue.
 
@@ -49,11 +54,13 @@ The OSM uses multiplexers to route the 17 inputs to the 48 outputs and takes its
     \label{fig:osm-design}
 \end{figure}
 
-Without looking at the different LATOME routings, it appears that, there should be 48 multiplexers of input size \(224\times17=3808\) bits. However when considering the data paths and optimizing for them, the biggest multiplexers turn out to have at most 4 input frames, meaning that each row from the HLS 2D array has only 4 entries. In other words, the Output Switch Matrix is a sparse matrix. By moving the serializer before the OSM, the biggest multiplexers have an input size of \(4\times32\) instead of \(4\times224\).
+The Figure \ref{fig:osm-design} shows a simplified diagram of the OSM. 10 inputs are connected to 4 multiplexers. The colors of the routes correspond to different LATOME mappings, for example, green is LATOME 0, red is LATOME 1. Each LATOME possess the same switch matrix block, meaning that they can route all mappings. With different selection signals, the OSM can apply the correct mapping and route the data to the correct FEX system.
+
+Without looking at the different LATOME mappings, it appears that, there should be 48 multiplexers of input size \(224\times17=3808\) bits. However when considering the data paths and optimizing for them, the biggest multiplexers turn out to have at most 4 input frames, meaning that each row from the HLS 2D array has only 4 entries. In other words, the Output Switch Matrix is a sparse matrix. By moving the serializer before the OSM, the biggest multiplexers have an input size of \(4\times32\) instead of \(4\times224\).
 
 \subsubsection{Frame Encoder}
 
-The frame encoder block is responsible for creating the 17 frames of 224 bits representing the whole data. When using parallel data, the block is very simple and only needs to concatenate and order the different data words. Serializing before the Frame Encoder, makes the building of 224 bits frames unnecessary.
+The frame encoder block creates the 17 frames of 224 bits representing the whole data. When using parallel data, the block is very simple and only needs to concatenate and order the different data words. Serializing before the Frame Encoder, makes the creation of 224 bits frames unnecessary, and the serialization would actually be done by the Frame Encoder.
 
 The Frame Encoder takes as input the 320 MLE results, the control bits and the BCID and assembles them. To create the 32 bit words, a counter is used to keep track of the current word being processed. A \verb|switch| statement is used to handle the different cases.
 
@@ -65,10 +72,22 @@ The seven sequential cycles needed to process the serial words making up one fra
 
 The frame alignment block reads the current BC index and if it matches the alignment index, it overwrites the data with the new data, otherwise it simply forwards it. The introduction of a simple counter indicating which of the 7 words is currently being processed together with a \verb|switch| statement taking care of the different cases is enough to get a TDM version of this block. Additionally, this block sends a 4 bit control character indicating for each byte if it is a data byte or a control byte. Before the serialization, the block sent the complete 28-bit control word, now it sends 4 bits at a time.
 
+\subsection{Unrolling Inside or Outside the CCORE}
+
+When developing the HLS code for these design blocks, two options can be considered using CCOREs in \verb|for| loops, as illustrated in figure \ref{fig:unrolling-inside-outside}. The first one is to set the OSM, Frame Alignment or CRC9 as an elementary block processing only one frame at a time, and to create as many copies as there are frames to process. The second option is to make the design block process all the frames, and to set it as a CCORE. Using the HLS jargon, the first option refers to \textit{unrolling} ``outside'' of the CCORE, while the second refers to \textit{unrolling} ``inside'' of the CCORE.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.6\textwidth]{unroll_inside_outside.png}
+    \caption{Unrolling inside vs outside the CCORE}
+    \label{fig:unrolling-inside-outside}
+\end{figure}
+
+For this DSE, the Frame Alignment and CRC9 blocks were considered. The study was performed by either using the creating the unrolled \verb|for| loop in the CCORE or outside of it. The results were then compared to see which option was the best, both in the v6 and v6.b firmware versions to put the results in perspective.
 
 \subsection{Leveraging HLS Directives}
 
-The second space of design exploration is the HLS directives, specifically, the CCORE related ones. Each processing block of the Output Summing is declared as a CCORE one. This makes Catapult optimize the design inside of the CCORE once to reuse it for all the instances. The two options offered by Catapult (sequential or combinational) were tested for each block.
+The last space of design exploration is the HLS directives, specifically, the CCORE related ones. Each processing block of the Output Summing is declared as a CCORE one. This makes Catapult optimize the design inside of the CCORE once to reuse it for all the instances. The two options offered by Catapult (sequential or combinational) were tested for each block.
 
 Additionally, Catapult gives the possibility to set the design goal for the optimization to be either latency or area. Setting this goal to either one will have an important impact on the final result.
 
@@ -82,22 +101,22 @@ Overall, there are six different blocks with each two options for the CCORE and 
         \hline
         \hline
         CCORE & 
-            \begin{tabular}{@{}c@{}}
-                Masking \\
-                Emec Adapter\\
-                MLE\\
-                Data Encoder\\
-                OSM\\
-                Frame Alignment\\
-            \end{tabular} &
-            \begin{tabular}{c}
-                Sequential / Combinational \\
-                Sequential / Combinational \\
-                Sequential / Combinational \\
-                Sequential / Combinational \\
-                Sequential / Combinational \\
-                Sequential / Combinational \\
-            \end{tabular} \\
+        \begin{tabular}{@{}c@{}}
+            Masking \\
+            Emec Adapter\\
+            MLE\\
+            Data Encoder\\
+            OSM\\
+            Frame Alignment\\
+        \end{tabular} &
+        \begin{tabular}{c}
+            Sequential / Combinational \\
+            Sequential / Combinational \\
+            Sequential / Combinational \\
+            Sequential / Combinational \\
+            Sequential / Combinational \\
+            Sequential / Combinational \\
+        \end{tabular} \\
         \hline
         \multicolumn{2}{|c|}{Optimization Goal} & Latency / Area \\
         \hline
@@ -105,6 +124,8 @@ Overall, there are six different blocks with each two options for the CCORE and 
     \caption{Possible values for each HLS option}
     \label{tab:ccore-optimization}
 \end{table}
+
+The preferred firmware version from the TDM exploration was used as a base for the HLS directives exploration.
 
 In the OSUM, many ``for'' loops are used to create the different instances of the blocks. A full unroll means that the \verb|for| loop creates as many parallel instances as there are iterations. In some cases, a partial unroll can be used to create a fixed number of instances which are reused to process all the data. For example a \verb|for| loop of 320 iterations can have an ``unroll 4'' directive to create 4 instances that will process 80 iterations each. This can lead to very high area reduction at the price of latency. The choice of full or partial unroll can be done manually, or left to Catapult to decide. For this design exploration, we have given Catapult the freedom to choose the best unroll factor, within the following constraints:
 \begin{itemize}
@@ -114,19 +135,6 @@ In the OSUM, many ``for'' loops are used to create the different instances of th
 The first value is a direct consequence of the 280MHz operating frequency, while the second value is the latency of the v5 design, which should not be exceeded.
 
 To create all the different combinations, a tcl script looping through each of them and launching the Catapult synthesis was used. The results were then analyzed to find the best combination of options. A follow-up Quartus compilation analysis was done to get more precise and meaningful results. Overall, the HLS synthesis run time for all the combination lasted around 9 hours, while the Quartus compilation for all the combinations lasted 3 days.
-
-\subsection{Unrolling Inside or Outside the CCORE}
-
-When developing the HLS code for these design blocks, two options can be considered using CCOREs in \verb|for| loops, as illustrated in figure \ref{fig:unrolling-inside-outside}. The first one is to set the OSM, Frame Alignment or CRC9 as an elementary block processing only one frame at a time, and to create as many copies as there are frames to process. The second option is to make the design block process all the frames, and to set it as a CCORE. Using the HLS jargon, the first option refers to \textit{unrolling} ``outside'' of the CCORE, while the second refers to \textit{unrolling} ``inside'' of the CCORE.
-
-\begin{figure}
-    \centering
-    \includegraphics[width=0.6\textwidth]{unroll_inside_outside.png}
-    \caption{Unrolling inside vs outside the CCORE}
-    \label{fig:unrolling-inside-outside}
-\end{figure}
-
-For this DSE, the Frame Alignment and CRC9 blocks were considered. The study was performed by either using the creating the unrolled \verb|for| loop in the CCORE or outside of it. The results were then compared to see which option was the best, both in the v6 firmware and in the new one.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -153,85 +161,79 @@ The expected results at the block level are an increase of the maximum operating
         \hline
         Version & Area (ALMs) & \(F_{max}\) (MHz) \\
         \hline
-        Original OSM & 3621.5 & 310.17 \\
-        Serialized OSM & 476.8 & 524.38  \\
+        v6 OSM & 3621.5 & 310.17 \\
+        v6.b OSM & 476.8 & 524.38  \\
         \hline
-        Improvement & \(-86.8\%\) & \(+69.1\%\) \\
+        Comparison & \(-86.8\%\) & \(+69.1\%\) \\
         \hline
     \end{tabular}
-    \caption{Results From the OSM Optimization}
+    \caption{OSM areas and operating frequencies}
     \label{tab:osm-optimization}
 \end{table}
 
-The table \ref{tab:osm-optimization} shows an actual area reduction of a factor of 7.6 and an increase of the maximum operating frequency of 69\%. The area reduction is slightly higher than the expected factor of 7, which can be explained by the overhead that the signal synchronization logic had on the original design. 
+The table \ref{tab:osm-optimization} shows an actual area reduction of a factor of 7.6 and an increase of the maximum operating frequency of 69\%. The area reduction is slightly higher than the expected factor of 7, which can be explained by the overhead that the signal synchronization logic had on the original design.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsubsection{Serializing Before Frame Encoder}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+The Frame Encoder is considered as a small block creating one frame and copied 17 times (number of inputs of the OSM) in the v6 firmware, while in the v6.b firmware, the block creates the 17 frames within itself. This refers to unrolling inside or outside the CCORE. To get a fair comparison, we multiply the area from the v6 firmware by 17 to get the total area of the 17 instances. The results are shown in the table \ref{tab:frame-encoder-optimization}.
 
-\subsection{HLS Directives}
-
-Once the results were obtained, they were extracted in an Excel file to be analyzed. A python script created the different figures presented in this section. 
-
-The first figure, figure \ref{fig:dse-overall}, shows the overall results for all the combinations, each represented by a point. The color of the points indicate the latency for this solution. Finally, the blue horizontal line shows the operating frequency of the OSUM block, 280MHz. This figure shows that the solutions with the highest latencies are the ones with the worst \(F_{max}\). This is explained by the fact that when Catapult implements resource sharing, with partial unrolling, the latency increases, but the resource sharing logic has a negative impact on the \(F_{max}\).
-
-In figure \ref{fig:dse-goal}, the points are ``+'' when the goal for the solution is latency and ``o'' when it is area. Each line connects two solutions with all the same options except for the optimization goal. The line colorization depends on the latency. For instance, the points on the left of the figure all have lines going from bottom left to top right, with a color gradient from red to yellow. Additionally, the points at the bottom left are all area optimized solutions, while the ones at the top right are latency optimized solutions. This indicates that using the latency optimization goal will lead to a higher \(F_{max}\), lower latency at a small area cost, since the lines have a very big slope. Two clusters can be clearly distinguished, the one on the left showing a clear tendency and the one on the right showing a more scattered distribution.
-
-Figures \ref{fig:dse-ena-mux}, \ref{fig:dse-emec-adapter}, \ref{fig:dse-efex-data}, show no clear tendency when varying the CCORE type for the Masking, EMEC Adapter and Data Encoder blocks. These blocks are more secondary ones for the optimizations and are very dependent on the more important ones. Hence they should be used for adjustments once the main blocks are optimized.
-
-The figures \ref{fig:dse-efex-mle}, \ref{fig:dse-osm}, \ref{fig:dse-frame-select} show the results when varying the CCORE type for the MLE, OSM and Frame Select blocks. The MLE block shows a clear tendency: all the points on the right are combinational ones, while the ones on the left are sequential, the lines have a very small slope, and points are far from each other. This means that setting the MLE CCORE as sequential instead of combinational has a small impact on the \(F_{max}\), but reduces the area drastically. The OSM has almost no impact on the area, since the lines are vertical, but has one on the \(F_{max}\), which is very dependant on the other blocks' settings. Finally, most of the lines for the Frame Select block are going from the bottom right where the combinational points are to the sequential ones on the top left, indicating that the sequential setting has a positive impact both on the \(F_{max}\) and the area.
-
-\begin{figure}
+\begin{table}[ht]
     \centering
-    \includegraphics[trim={1cm 0 3cm 0}, clip, width=1\textwidth]{dse_overall.png}
-    \caption{Overall Results}
-    \label{fig:dse-overall}
-    \centering
-    \includegraphics[trim={1cm 0 3cm 0}, clip, width=1\textwidth]{dse_goal.png}
-    \caption{Results when varying the design goal}
-    \label{fig:dse-goal}
-\end{figure}
-\begin{figure}
-    \centering
-    \includegraphics[trim={1cm 0 3cm 0}, clip, width=1\textwidth]{dse_ena_mux.png}
-    \caption{Results when varying the CCORE type for the Masking}
-    \label{fig:dse-ena-mux}
-    \centering
-    \includegraphics[trim={1cm 0 3cm 0}, clip, width=1\textwidth]{dse_emec_adapter.png}
-    \caption{Results when varying the CCORE type for the EMEC Adapter}
-    \label{fig:dse-emec-adapter}
-\end{figure}
-\begin{figure}
-    \centering
-    \includegraphics[trim={1cm 0 3cm 0}, clip, width=1\textwidth]{dse_efex_mle.png}
-    \caption{Results when varying the CCORE type for the MLE}
-    \label{fig:dse-efex-mle}    
-    \centering
-    \includegraphics[trim={1cm 0 3cm 0}, clip, width=1\textwidth]{dse_efex_data.png}
-    \caption{Results when varying the CCORE type for the Data Encoder}
-    \label{fig:dse-efex-data}
-\end{figure}
-\begin{figure}
-    \centering
-    \includegraphics[trim={1cm 0 3cm 0}, clip, width=1\textwidth]{dse_osm.png}
-    \caption{Results when varying the CCORE type for the OSM}
-    \label{fig:dse-osm}
-    \centering
-    \includegraphics[trim={1cm 0 3cm 0}, clip, width=1\textwidth]{dse_frame_select.png}
-    \caption{Results when varying the CCORE type for the Frame Select}
-    \label{fig:dse-frame-select}
-\end{figure}
+    \begin{tabular}{|c|c|c|}
+        \hline
+        Version & Area (ALMs) & \(F_{max}\) (MHz) \\
+        \hline
+        v6 Frame Encoder & \underline{24.4} (\(24.4\times17=414.8\)) & 366.03 \\
+        v6.b Frame Encoder & 1062.7 & 349.77  \\
+        \hline
+        Comparison & \(+156\%\) & \(-5.5\%\) \\
+        \hline
+    \end{tabular}
+    \caption{Frame Encoder areas and operating frequencies}
+    \label{tab:frame-encoder-optimization}
+\end{table}
 
-Another interesting aspect rising from this DSE is the discrepancy between the results given by Catapult and the ones from Quartus. In the table below, the results are ordered by the area given by Catapult. The columns ``Goal'' to ``crc9'' contain the different CCORE options. ``mask.'' refers to the Masking block and is also called ``ena mux'',  ``emec'' refers to the EMEC Adapter, ``mle'' to the Multi Linear Encoder, ``frame'' to the Frame Encoder, ``osm'' to the Output Switch Matrix ``align.'' to the Frame Alignment and ``crc9'' to the Cyclic Redundant Check. Addtitionally, ``lat.'' refers to the latency. These abbreviations are used to fit the table in the page.
+The table \ref{tab:frame-encoder-optimization} shows an area increase of 156\% and a decrease of the maximum operating frequency of 5.5\%. Since the absolute are values are rather low, the area increase is not a major issue. The decrease of the \(F_{max}\) is also not a major issue, as the operating frequency is still above the 280 MHz requirement.
 
-The colorization of the area values ranges from green when it is the lowest to red when it is the highest. The Quartus area values gradient follows the one from Catapult in average but for some groups of solutions Catapult seems to be too optimistic and for others too pessimistic. In the Catapult result, one can also see the slack column which indicates, in nanosecond, the time left for the design to meet the timing constraints. In most cases, Catapult is too optimistic, as the slack is positive but the \(F_{max}\) is under 280 MHz. 
+To get a better understanding of the impact of the TDM approach on the whole firmware, the results at the OSUM level, and from the whole firmware are presented in the next section.
 
+\subsubsection{Comparison of the two TDM Approaches}
 
-\includepdf[pages={1-},scale=0.25,width=1.3\textwidth,pagecommand={\null\vfill\captionof{table}{Compilation of the Design Space Exploration results}}]{../pdf/results.pdf}
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{|c|c|c|}
+        \hline
+        Serializer & Area (ALMs) & \(F_{max}\) (MHz) \\
+        \hline
+        Before OSM & 20260.1 & 286.94 \\
+        Before Frame Encoder & 20441.6 & 295.07  \\
+        \hline
+    \end{tabular}
+    \caption{Results from the TDM Exploration at the OSUM Level}
+    \label{tab:tdm-osum-optimization}
+\end{table}
 
+Table \ref{tab:tdm-osum-optimization} shows that both approaches yield similar results at the OSUM level. We can however see that the area is slightly lower when serializing before the OSM, while the \(F_{max}\) is more significantly higher when serializing before the Frame Encoder.
+
+\begin{table}[ht]
+    \centering
+    \begin{tabular}{|c|c|c|c|c|}
+        \hline
+        Serializer & Area (ALMs) & \multicolumn{3}{|}{\(F_{max}\) (MHz)} \\
+        \hline
+        Before OSM & \underline{225,129} / 427,200 (53 \%) & 325 & 262 & 244 \\
+        Before Frame Encoder & \underline{224,924} / 427,200 (53 \%) & 314 & 249 & 247 \\
+        \hline
+    \end{tabular}
+    \caption{Results from the TDM Exploration at the firmware Level}
+    \label{tab:tdm-firmware-optimization}
+\end{table}
+
+With the full firmware, the results vary from a Quartus compilation to another. Especially, the timing reports can vary a lot, while the areas remain stable. The results presented in the table \ref{tab:tdm-firmware-optimization} represent the best results obtained for each approach, after multiple compilations.
+
+In table \ref{tab:tdm-firmware-optimization}, the area result is the one underlined and it is given together with the number of ALMs from the FPGA and the corresponding resource usage in percentage. The $F_{max}$ value is now given for the three clock domains of the firmware: 240MHz, 280MHz and 320MHz. The difference between both TDM approach is minimal, and because of the high variability of the results, one can consider both approaches equivalent. In terms of code complexity, the approach serializing before the OSM is simpler, as it requires minor changes in the OSM block, while the other approach requires a complete rewrite of the Frame Encoder block.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -335,37 +337,101 @@ Table \ref{tab:crc9-optimization} shows the impact of both approaches on the OSU
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{Overall Improvement}
+\subsection{HLS Directives}
+
+The results from the HLS directives DSE were extracted in an Excel file to be analyzed. A python script created the different figures presented in this section.
+
+The first figure, figure \ref{fig:dse-overall}, shows the overall results for all the combinations, each represented by a point. The color of the points indicate the latency for this solution. The blue horizontal line shows the operating frequency of the OSUM block, 280MHz. This figure shows that the solutions with the highest latencies are the ones with the worst \(F_{max}\). This is explained by the fact that when Catapult implements resource sharing, with partial unrolling, the latency increases, but the resource sharing logic has a negative impact on the \(F_{max}\).
+
+In figure \ref{fig:dse-goal}, the points are ``+'' when the goal for the solution is latency and ``o'' when it is area. Each line connects two solutions with all the same options except for the optimization goal. The line colorization depends on the latency. For instance, the points on the left of the figure all have lines going from bottom left to top right, with a color gradient from red to yellow. Additionally, the points at the bottom left are all area optimized solutions, while the ones at the top right are latency optimized solutions. This indicates that using the latency optimization goal will lead to a higher \(F_{max}\), lower latency at a small area cost, since the lines have a very big slope. Two clusters can be clearly distinguished, the one on the left showing a clear tendency and the one on the right showing a more scattered distribution.
+
+Figures \ref{fig:dse-ena-mux}, \ref{fig:dse-emec-adapter}, \ref{fig:dse-efex-data}, show no clear tendency when varying the CCORE type for the Masking, EMEC Adapter and Data Encoder blocks. These blocks are more secondary ones for the optimizations and are very dependent on the more important ones. Hence they should be used for adjustments once the main blocks are optimized.
+
+The figures \ref{fig:dse-efex-mle}, \ref{fig:dse-osm}, \ref{fig:dse-frame-select} show the results when varying the CCORE type for the MLE, OSM and Frame Select blocks. The MLE block shows a clear tendency: all the points on the right are combinational ones, while the ones on the left are sequential, the lines have a very small slope, and points are far from each other. This means that setting the MLE CCORE as sequential instead of combinational has a small impact on the \(F_{max}\), but reduces the area drastically. The OSM has almost no impact on the area, since the lines are vertical, but has one on the \(F_{max}\), which is very dependant on the other blocks' settings. Finally, most of the lines for the Frame Select block are going from the bottom right where the combinational points are to the sequential ones on the top left, indicating that the sequential setting has a positive impact both on the \(F_{max}\) and the area.
+
+\begin{figure}
+    \centering
+    \includegraphics[trim={1cm 0 3cm 0}, clip, width=1\textwidth]{dse_overall.png}
+    \caption{Overall Results}
+    \label{fig:dse-overall}
+    \centering
+    \includegraphics[trim={1cm 0 3cm 0}, clip, width=1\textwidth]{dse_goal.png}
+    \caption{Results when varying the design goal}
+    \label{fig:dse-goal}
+\end{figure}
+\begin{figure}
+    \centering
+    \includegraphics[trim={1cm 0 3cm 0}, clip, width=1\textwidth]{dse_ena_mux.png}
+    \caption{Results when varying the CCORE type for the Masking}
+    \label{fig:dse-ena-mux}
+    \centering
+    \includegraphics[trim={1cm 0 3cm 0}, clip, width=1\textwidth]{dse_emec_adapter.png}
+    \caption{Results when varying the CCORE type for the EMEC Adapter}
+    \label{fig:dse-emec-adapter}
+\end{figure}
+\begin{figure}
+    \centering
+    \includegraphics[trim={1cm 0 3cm 0}, clip, width=1\textwidth]{dse_efex_mle.png}
+    \caption{Results when varying the CCORE type for the MLE}
+    \label{fig:dse-efex-mle}    
+    \centering
+    \includegraphics[trim={1cm 0 3cm 0}, clip, width=1\textwidth]{dse_efex_data.png}
+    \caption{Results when varying the CCORE type for the Data Encoder}
+    \label{fig:dse-efex-data}
+\end{figure}
+\begin{figure}
+    \centering
+    \includegraphics[trim={1cm 0 3cm 0}, clip, width=1\textwidth]{dse_osm.png}
+    \caption{Results when varying the CCORE type for the OSM}
+    \label{fig:dse-osm}
+    \centering
+    \includegraphics[trim={1cm 0 3cm 0}, clip, width=1\textwidth]{dse_frame_select.png}
+    \caption{Results when varying the CCORE type for the Frame Select}
+    \label{fig:dse-frame-select}
+\end{figure}
+
+Another interesting aspect rising from this DSE is the discrepancy between the results given by Catapult and the ones from Quartus. In the table below, the results are ordered by the area given by Catapult. The columns ``Goal'' to ``crc9'' contain the different CCORE options. ``mask.'' refers to the Masking block and is also called ``ena mux'',  ``emec'' refers to the EMEC Adapter, ``mle'' to the Multi Linear Encoder, ``frame'' to the Frame Encoder, ``osm'' to the Output Switch Matrix ``align.'' to the Frame Alignment and ``crc9'' to the Cyclic Redundant Check. Addtitionally, ``lat.'' refers to the latency. These abbreviations are used to fit the table in the page.
+
+The colorization of the area values in the table ranges from green when it is the lowest to red when it is the highest. The Quartus area values gradient follows the one from Catapult in average but for some groups of solutions Catapult seems to be too optimistic and for others too pessimistic. In the Catapult result, one can also see the slack column which indicates, in nanosecond, the time left for the design to meet the timing constraints. In most cases, Catapult is too optimistic, as the slack is positive but the \(F_{max}\) is under 280 MHz.
+
+
+\includepdf[pages={1-},scale=0.25,width=1.3\textwidth,pagecommand={\null\vfill\captionof{table}{Compilation of the Design Space Exploration results}}]{../pdf/results.pdf}
+
+The same DSE was performed on the v6 firmware to give a fair comparison in section \ref{sec:overall-improvement}. The results are not presented here for the sake of brevity. The most optimized version of the firmware used ...
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Overall Improvement}\label{sec:overall-improvement}
 
 With the knowledge from the different design space explorations, the new firmware could be optimized to yield the best results.
 
-The TDE exploration showed that serializing before the OSM was the best option, as the area reduction at the block level translated to the higher levels. Moreover, the higher \(F_{max}\) value allows the circuit to operate at 280 MHz without any timing violations.
+The TDM exploration showed that the two approaches were equivalent in terms of area and \(F_{max}\). The serialization before the OSM was chosen as it required less changes in the code.
 
-The blocks with the biggest impacts concerning the HLS CCORE type are the MLE and the Frame Select. Those two must be set to sequential in order to unlock resource sharing and reduce the area. When setting the design goal to area, the \(F_{max}\) value unfortunately does not match the 280 MHz requirement. However this is not a major problem, as the best area with the design goal set to area is 10\% smaller than the best area with the design goal set to latency.
+Next, the unrolling inside or outside of the CCORE was tested for the Frame Alignment and CRC9 blocks and compared both for the v6 firmware and the new one. The results confirmed the intuition that unrolling inside of the unrolled \verb|for| loop is better when nothing can be shared between the different elementary blocks, while unrolling outside is better when some logic can be shared, like counters.
 
-Finally, the unrolling inside or outside of the CCORE was tested for the Frame Alignment and CRC9 blocks and compared both for the v6 firmware and the new one. 
+The blocks with the biggest impacts concerning the HLS CCORE type are the MLE and the Frame Select. Those two must be set to sequential in order to unlock resource sharing and reduce the area. When setting the design goal to area, the \(F_{max}\) values unfortunately seldomly match the 280 MHz requirement. However the results confirmed that setting the design goal to latency or area reduces the value being optimized for.
+
+The best results obtained from v6 and v6.b firmware versions are presented in the table \ref{tab:overall-improvement}. 
 
 \begin{table}[ht]
     \centering
-    \begin{tabular}{|c|c|c|}
+    \begin{tabular}{|c|c|c|c|c|}
+        \hline
+        Version & Area (ALMs) & \multicolumn{3}{|}{\(F_{max}\) (MHz)} \\
+        \hline
+        \multicolumn{5}{|}{OSUM level} \\
         \hline
         \hline
-        \multicolumn{3}{|c|}{unroll outside} \\
-        \hline
-        Block & Area (ALMs) & \(F_{max}\) (MHz) \\
-        \hline
-        CRC9 & \underline{68} (\(68\times48=3264\)) & 395.5 \\
-        OSUM & 30534 & 271.89 \\
+        v6.b & \underline{225,129} / 427,200 (53 \%) & 325 & 262 & 244 \\
+        v6 \\
+        \multicolumn{5}{|}{Firmware level} \\
         \hline
         \hline
-        \multicolumn{3}{|c|}{unroll inside} \\
-        \hline
-        Block & Area (ALMs) & \(F_{max}\) (MHz) \\
-        \hline
-        CRC9 & \underline{3332} (\(3332/48=69.4\))& 357.1\\
-        OSUM & 30507 & 262.6\\
+        v6.b & \underline{225,129} / 427,200 (53 \%) & 325 & 262 & 244 \\
+        v6 \\
         \hline
     \end{tabular}
-    \caption{CRC9 design exploration using the v6 firmware}
-    \label{tab:crc9-optimization}
+    \caption{Results from v6 and v6.b firmware versions at the OSUM and firmware levels}
+    \label{tab:overall-improvement}
 \end{table}
